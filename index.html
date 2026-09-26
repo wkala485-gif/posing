@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>神還原臥底 (Pose Match: Shadow Agent)</title>
+  <meta name="description" content="極簡搞笑2D火柴人益智小遊戲！嚴格幾何角度判定、純自由關節拖拽、10大特工關卡及雙人合體！">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      background-color: #030712;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+    header {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid #1e293b;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-badge {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #06b6d4, #f59e0b);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #020617;
+      font-size: 14px;
+    }
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .header-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-icon {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn-icon:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .btn-lang {
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      font-weight: 700;
+    }
+    .timer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #020617;
+      border: 1px solid #f59e0b;
+      color: #f59e0b;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .timer-urgent {
+      border-color: #f43f5e;
+      color: #f43f5e;
+      background: rgba(244, 63, 94, 0.2);
+      animation: blink 0.5s infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0.5; }
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 500px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 6px 12px;
+      overflow: hidden;
+    }
+    .hud-box {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .hud-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mission-code {
+      font-family: monospace;
+      font-size: 10px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .mission-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .score-display {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .score-label {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .score-num {
+      font-family: monospace;
+      font-size: 26px;
+      font-weight: 900;
+      color: #f43f5e;
+      transition: color 0.15s;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 9px;
+      background: #020617;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #1e293b;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #f43f5e;
+      border-radius: 999px;
+      transition: width 0.15s ease-out, background-color 0.15s;
+    }
+    .passing-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 75%;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.6);
+      z-index: 2;
+    }
+    .comment-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+      border: 1px solid #f43f5e;
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      display: inline-block;
+    }
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 500 / 520;
+      max-height: calc(100vh - 200px);
+      background: #060a12;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+      touch-action: none;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    canvas:active {
+      cursor: grabbing;
+    }
+    .action-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .tool-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 11px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      transition: all 0.15s;
+    }
+    .btn-submit.ready {
+      background: #10b981;
+      color: #020617;
+      border-color: #10b981;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
+      animation: pulseBtn 1.5s infinite;
+    }
+    @keyframes pulseBtn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal-box {
+      width: 100%;
+      max-width: 400px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-badge">探</div>
+      <div class="brand-title" id="brandTitle">神還原臥底</div>
+    </div>
+    <div class="header-btns">
+      <div class="timer-badge" id="timerBadge" style="display: none;">⏱ 45s</div>
+      <button class="btn-icon" id="btnSound">🔊 音效</button>
+      <button class="btn-icon" id="btnReset">↺ 重置</button>
+      <button class="btn-icon" id="btnLevel">任務庫 (10關)</button>
+      <button class="btn-icon btn-lang" id="btnLang">🌐 EN / 中</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="hud-box">
+      <div class="hud-top">
+        <div>
+          <div class="mission-code" id="missionCode">01. SOLO MISSION</div>
+          <div class="mission-name" id="missionName">第一關：金雞獨立歡呼</div>
+        </div>
+        <div class="score-display">
+          <span class="score-label" id="scoreLabel">四肢吻合:</span>
+          <span class="score-num" id="scoreNum">0%</span>
+        </div>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="passing-marker"></div>
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="comment-tag" id="commentTag">差距過大！請調整肢體！</div>
+        <div style="font-size: 11px; color: #64748b;" id="missionDesc">單腳牢踩地面 · 雙手高舉</div>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="gameCanvas" width="500" height="520"></canvas>
+    </div>
+
+    <div class="action-panel">
+      <div class="tool-row">
+        <button class="btn-icon" id="btnToggleShadow">影子: 顯示</button>
+        <button class="btn-icon" id="btnGuide">對齊線: 關閉</button>
+      </div>
+      <button class="btn-submit" id="btnSubmit">📸 提交姿勢 (特工考核)</button>
+    </div>
+  </main>
+
+  <!-- Appraisal Result Modal -->
+  <div class="modal-backdrop" id="resultModal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-family: monospace; font-size: 10px; color: #38bdf8; letter-spacing: 2px;" id="modalTopSecret">TOP SECRET // EVALUATION</div>
+        <div style="font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 700;">
+          <span id="modalTimeLabel">耗時:</span> <span id="modalTimeSpent" style="color: #38bdf8;">0.0s</span>
+        </div>
+      </div>
+      <h2 id="modalVerdict" style="font-size: 18px; font-weight: 800;">考核結果</h2>
+      <div style="padding: 12px; background: #020617; border-radius: 12px; border: 1px solid #1e293b;">
+        <div id="modalScore" style="font-size: 42px; font-family: monospace; font-weight: 900; color: #10b981;">88%</div>
+        <div id="modalStars" style="font-size: 20px; color: #fbbf24; margin-top: 2px;">★★★</div>
+      </div>
+      <div id="modalQuote" style="font-size: 12px; color: #cbd5e1; font-style: italic; line-height: 1.4;">長官評語</div>
+      <div style="display: flex; gap: 8px; margin-top: 6px;">
+        <button class="btn-submit" id="btnModalRetry" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155;">再試一次</button>
+        <button class="btn-submit ready" id="btnModalNext">下一關 ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Bilingual Dictionary Map ---
+    const I18N = {
+      zh: {
+        brandTitle: '神還原臥底',
+        btnSoundOn: '🔊 音效',
+        btnSoundOff: '🔇 靜音',
+        btnReset: '↺ 重置',
+        btnLevel: '任務庫 (10關)',
+        btnShadowShow: '影子: 顯示',
+        btnShadowHide: '影子: 隱藏',
+        btnGuideOn: '對齊線: 開啟',
+        btnGuideOff: '對齊線: 關閉',
+        btnSubmit: '📸 提交姿勢 (特工考核)',
+        scoreLabel: '四肢吻合:',
+        timeLabel: '耗時:',
+        critiqueFar: '差距過大！請調整肢體！',
+        critiqueClose: '角度接近中！繼續微調！',
+        critiqueReady: '對齊完美！隨時可提交！',
+        verdictPass: '考核通過！王牌臥底！',
+        verdictFailSolo: '骨折走形！回爐重造！',
+        verdictFailDuo: '潛入失敗！警報大響！',
+        btnRetry: '再試一次',
+        btnNext: '下一關 ➔',
+        missions: [
+          { title: '第一關：金雞獨立歡呼', code: '01. SOLO 45s', sub: '單腳牢踩地面 · 雙手高舉歡呼', quote: '「右腳牢牢站穩地面，左腿懸空彎折，雙手朝天展開！神還原慶功派對！」' },
+          { title: '第二關：大字型霸氣伸展', code: '02. SOLO 45s', sub: '雙腳大叉踩地 · 雙臂斜向外展開', quote: '「維特魯威火柴人幾何霸氣！雙腳踏實，雙臂斜向上展開！」' },
+          { title: '第三關：極限斯拉夫深蹲', code: '03. SOLO 45s', sub: '雙膝完全下折彎曲 · 腳底貼地 · 雙手前伸', quote: '「斯拉夫蹲精髓在於腳跟緊貼地面，臀部下沉至極限，雙臂前伸保持絕對平衡！」' },
+          { title: '第四關：經典 JOJO 歪頭立', code: '04. SOLO 45s', sub: '單手遮面 · 骨盆傾斜 · 帥氣壓迫感', quote: '「『ゴゴゴゴ』替身使者的氣場！身姿側屈，右掌半遮面部！」' },
+          { title: '第五關：超人起飛 (單手撐地俯臥撐)', code: '05. SOLO 45s', sub: '單手腳尖撐地 · 軀幹平直近地面', quote: '「左臂垂直撐地，雙腳足尖點地，右臂如超人向前直刺！」' },
+          { title: '第六關：背靠背持槍防禦', code: '06. DUO 45s', sub: '兩人後背必須緊貼 · 雙槍反向瞄準', quote: '「【雙人模式解鎖】藍橙特工背靠背緊密貼合，防守反向無死角！」' },
+          { title: '第七關：鐵達尼號經典飛翔', code: '07. DUO 45s', sub: 'A 在前展翅高飛 · B 在後緊抱其腰', quote: '「Agent A 在前迎風張臂，Agent B 在後雙手緊箍腰部！」' },
+          { title: '第八關：雙人合體騎馬', code: '08. DUO 45s', sub: 'A 彎腰伏地作戰馬 · B 跨坐其背揮韁繩', quote: '「特工戰馬出動！Agent A 四足點地，Agent B 跨坐背上拉緊韁繩！」' },
+          { title: '第九關：七龍珠 Fusion 融合', code: '09. DUO 45s', sub: '兩人對向半蹲彎曲 · 雙方食指精確碰觸！', quote: '「兩名特工各自下蹲微屈，兩手食指在畫面中心精準對撞！」' },
+          { title: '第十關：雙人疊羅漢假裝時鐘', code: '10. DUO 45s', sub: 'A 穩當底座 · B 倒立於 A 肩上化身指針', quote: '「終極臥底！A 穩扎馬步，B 雙手撐肩倒立，雙腿化作十點十分時鐘指針！」' }
+        ]
+      },
+      en: {
+        brandTitle: 'Pose Match: Shadow Agent',
+        btnSoundOn: '🔊 Sound',
+        btnSoundOff: '🔇 Muted',
+        btnReset: '↺ Reset',
+        btnLevel: 'Missions (10)',
+        btnShadowShow: 'Shadow: On',
+        btnShadowHide: 'Shadow: Off',
+        btnGuideOn: 'Guides: On',
+        btnGuideOff: 'Guides: Off',
+        btnSubmit: '📸 Submit Pose (Agent Exam)',
+        scoreLabel: 'Limb Match:',
+        timeLabel: 'Time:',
+        critiqueFar: 'Far from target! Adjust limbs!',
+        critiqueClose: 'Getting closer! Keep tweaking!',
+        critiqueReady: 'Well aligned! Ready to submit!',
+        verdictPass: 'Infiltration Success! Elite Agent!',
+        verdictFailSolo: 'Disguise Blown! Back to Academy!',
+        verdictFailDuo: 'Cover Compromised! Alarm Sounded!',
+        btnRetry: 'Retry',
+        btnNext: 'Next Mission ➔',
+        missions: [
+          { title: '01: Golden Flamingo Cheer', code: '01. SOLO 45s', sub: 'Plant one foot · Raise arms high in cheer', quote: '"Right foot grounded, left leg hooked, arms raised high! Infiltration celebration!"' },
+          { title: '02: Vitruvian Star Spread', code: '02. SOLO 45s', sub: 'Feet planted wide · Arms diagonally extended', quote: '"Vitruvian geometric stance! Firm grounding and expansive arm span!"' },
+          { title: '03: Extreme Slav Squat', code: '03. SOLO 45s', sub: 'Deep knee bend · Feet on floor · Arms out', quote: '"Heels firmly down, hips dropped to the limit, arms extended for total balance!"' },
+          { title: '04: Classic JOJO Pose', code: '04. SOLO 45s', sub: 'Face guarded · Tilted torso · Menacing aura', quote: '"Menacing Stand aura! Pelvis tilted, right palm partially covering the eyes!"' },
+          { title: '05: Superman One-Arm Pushup', code: '05. SOLO 45s', sub: 'One hand and toes grounded · Torso parallel', quote: '"Left arm vertical, toes on floor, right arm punching forward like Superman!"' },
+          { title: '06: Back-to-Back Cover Fire', code: '06. DUO 45s', sub: 'Backs firmly touching · Dual pistol coverage', quote: '"[Duo Mode] Blue and Orange agents locked back-to-back with 360 cover!"' },
+          { title: '07: Titanic Flying Bow', code: '07. DUO 45s', sub: 'A spreads wings · B holds waist firmly', quote: '"Agent A embracing the wind with wings spread, Agent B supporting at the waist!"' },
+          { title: '08: Stealth Human Steed', code: '08. DUO 45s', sub: 'A acts as mount · B sits astride', quote: '"Tactical steed! Agent A four points down, Agent B riding astride pulling reins!"' },
+          { title: '09: Dragon Ball Fusion Stance', code: '09. DUO 45s', sub: 'Crouched inward · Fingertips touching center', quote: '"Both agents lunging inward, index fingers colliding at the exact center!"' },
+          { title: '10: Duo Human Clock Stacking', code: '10. DUO 45s', sub: 'A forms firm base · B handstands as clock hands', quote: '"Ultimate camouflage! Base agent grounded, upper agent legs spread at 10:10!"' }
+        ]
+      }
+    };
+
+    // Auto-detect browser language as default
+    let currentLang = (typeof navigator !== 'undefined' && navigator.language && navigator.language.toLowerCase().startsWith('zh')) ? 'zh' : 'en';
+
+    // --- Audio Synthesizer (Web Audio API) ---
+    class SoundEngine {
+      constructor() { this.ctx = null; this.muted = false; }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playTone(freq, type, dur, gainVal = 0.15) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const now = this.ctx.currentTime;
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(gainVal, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + dur + 0.01);
+        } catch(e){}
+      }
+      playPop() { this.playTone(320, 'sine', 0.08, 0.2); }
+      playRelease() { this.playTone(220, 'triangle', 0.12, 0.15); }
+      playTick() { this.playTone(700, 'sine', 0.04, 0.1); }
+      playSuccess() {
+        if (this.muted) return;
+        this.init();
+        [440, 554, 659, 880].forEach((f, i) => setTimeout(() => this.playTone(f, 'triangle', 0.2, 0.2), i * 110));
+      }
+      playFail() {
+        if (this.muted) return;
+        this.init();
+        [240, 200, 160, 110].forEach((f, i) => setTimeout(() => this.playTone(f, 'sawtooth', 0.2, 0.15), i * 130));
+      }
+    }
+    const sound = new SoundEngine();
+
+    // --- Bone Config & Physics Constants ---
+    const CANVAS_WIDTH = 500;
+    const CANVAS_HEIGHT = 520;
+    const GROUND_Y = 436;
+    const BONE = { torso: 82, shoulder: 26, uArm: 48, fArm: 46, hipW: 20, thigh: 60, calf: 60, headR: 22 };
+
+    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+    function dist(p1, p2) { return Math.hypot(p2.x - p1.x, p2.y - p1.y); }
+    function pt(x, y) { return { x, y }; }
+
+    function vecAngle(p1, p2) {
+      return Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    }
+
+    function angleDiffDeg(a1, a2) {
+      let diff = Math.abs(a1 - a2);
+      while (diff > Math.PI) diff = Math.abs(2 * Math.PI - diff);
+      return (diff * 180) / Math.PI;
+    }
+
+    function createGroundedPose(cx, groundY = GROUND_Y) {
+      const ankleY = groundY;
+      const kneeY = ankleY - BONE.calf;
+      const hipY = kneeY - BONE.thigh;
+      const chestY = hipY - BONE.torso;
+      const headY = chestY - BONE.headR - 6;
+
+      const hip = pt(cx, hipY);
+      const chest = pt(cx, chestY);
+      const head = pt(cx, headY);
+      const leftShoulder = pt(chest.x - BONE.shoulder, chest.y + 4);
+      const rightShoulder = pt(chest.x + BONE.shoulder, chest.y + 4);
+      const leftHipJoint = pt(hip.x - BONE.hipW, hip.y);
+      const rightHipJoint = pt(hip.x + BONE.hipW, hip.y);
+
+      return {
+        hip, chest, head,
+        leftShoulder,
+        leftElbow: pt(leftShoulder.x - 20, leftShoulder.y + BONE.uArm),
+        leftWrist: pt(leftShoulder.x - 28, leftShoulder.y + BONE.uArm + BONE.fArm),
+        rightShoulder,
+        rightElbow: pt(rightShoulder.x + 20, rightShoulder.y + BONE.uArm),
+        rightWrist: pt(rightShoulder.x + 28, rightShoulder.y + BONE.uArm + BONE.fArm),
+        leftHipJoint,
+        leftKnee: pt(leftHipJoint.x - 6, kneeY),
+        leftAnkle: pt(leftHipJoint.x - 10, ankleY),
+        rightHipJoint,
+        rightKnee: pt(rightHipJoint.x + 6, kneeY),
+        rightAnkle: pt(rightHipJoint.x + 10, ankleY),
+      };
+    }
+
+    // 10 Preset Missions Geometry
+    const LEVELS = [
+      {
+        id: 1, isDuo: false,
+        targetA: {
+          rightAnkle: pt(270, GROUND_Y), rightKnee: pt(265, 376), rightHipJoint: pt(260, 318),
+          hip: pt(245, 318), leftHipJoint: pt(225, 318), leftKnee: pt(180, 340), leftAnkle: pt(215, 390),
+          chest: pt(245, 236), head: pt(245, 206), leftShoulder: pt(219, 240), rightShoulder: pt(271, 240),
+          leftElbow: pt(185, 195), leftWrist: pt(160, 150), rightElbow: pt(305, 195), rightWrist: pt(330, 150)
+        }
+      },
+      {
+        id: 2, isDuo: false,
+        targetA: {
+          leftAnkle: pt(165, GROUND_Y), leftKnee: pt(200, 380), leftHipJoint: pt(230, 324),
+          hip: pt(250, 324), rightHipJoint: pt(270, 324), rightKnee: pt(300, 380), rightAnkle: pt(335, GROUND_Y),
+          chest: pt(250, 242), head: pt(250, 212), leftShoulder: pt(224, 246), rightShoulder: pt(276, 246),
+          leftElbow: pt(175, 200), leftWrist: pt(135, 160), rightElbow: pt(325, 200), rightWrist: pt(365, 160)
+        }
+      },
+      {
+        id: 3, isDuo: false,
+        targetA: {
+          leftAnkle: pt(195, GROUND_Y), rightAnkle: pt(305, GROUND_Y), leftKnee: pt(170, 390), rightKnee: pt(330, 390),
+          leftHipJoint: pt(230, 375), rightHipJoint: pt(270, 375), hip: pt(250, 375),
+          chest: pt(250, 295), head: pt(250, 265), leftShoulder: pt(224, 298), rightShoulder: pt(276, 298),
+          leftElbow: pt(180, 310), leftWrist: pt(140, 315), rightElbow: pt(320, 310), rightWrist: pt(360, 315)
+        }
+      },
+      {
+        id: 4, isDuo: false,
+        targetA: {
+          leftAnkle: pt(205, GROUND_Y), leftKnee: pt(215, 378), leftHipJoint: pt(220, 320),
+          hip: pt(236, 320), rightHipJoint: pt(256, 320), rightKnee: pt(280, 376), rightAnkle: pt(300, GROUND_Y),
+          chest: pt(265, 240), head: pt(275, 210), leftShoulder: pt(240, 244), rightShoulder: pt(290, 236),
+          leftElbow: pt(200, 280), leftWrist: pt(230, 322), rightElbow: pt(335, 230), rightWrist: pt(280, 205)
+        }
+      },
+      {
+        id: 5, isDuo: false,
+        targetA: {
+          leftAnkle: pt(110, GROUND_Y), rightAnkle: pt(130, GROUND_Y), leftKnee: pt(165, 415), rightKnee: pt(180, 415),
+          leftHipJoint: pt(215, 395), rightHipJoint: pt(235, 395), hip: pt(225, 395),
+          chest: pt(305, 385), head: pt(335, 380), leftShoulder: pt(295, 395), rightShoulder: pt(315, 375),
+          leftElbow: pt(295, 415), leftWrist: pt(295, GROUND_Y), rightElbow: pt(355, 355), rightWrist: pt(395, 335)
+        }
+      },
+      {
+        id: 6, isDuo: true,
+        targetA: {
+          leftAnkle: pt(195, GROUND_Y), leftKnee: pt(205, 378), leftHipJoint: pt(215, 320),
+          hip: pt(230, 320), rightHipJoint: pt(245, 320), rightKnee: pt(240, 378), rightAnkle: pt(240, GROUND_Y),
+          chest: pt(230, 240), head: pt(225, 210), leftShoulder: pt(205, 244), rightShoulder: pt(255, 244),
+          leftElbow: pt(165, 240), leftWrist: pt(120, 240), rightElbow: pt(175, 255), rightWrist: pt(135, 245)
+        },
+        targetB: {
+          leftAnkle: pt(260, GROUND_Y), leftKnee: pt(260, 378), leftHipJoint: pt(255, 320),
+          hip: pt(270, 320), rightHipJoint: pt(285, 320), rightKnee: pt(295, 378), rightAnkle: pt(305, GROUND_Y),
+          chest: pt(270, 240), head: pt(275, 210), leftShoulder: pt(245, 244), rightShoulder: pt(295, 244),
+          rightElbow: pt(335, 240), rightWrist: pt(380, 240), leftElbow: pt(325, 255), leftWrist: pt(365, 245)
+        }
+      },
+      {
+        id: 7, isDuo: true,
+        targetA: {
+          leftAnkle: pt(290, GROUND_Y), leftKnee: pt(285, 378), leftHipJoint: pt(280, 320),
+          hip: pt(295, 320), rightHipJoint: pt(310, 320), rightKnee: pt(305, 378), rightAnkle: pt(315, GROUND_Y),
+          chest: pt(300, 240), head: pt(305, 210), leftShoulder: pt(275, 244), rightShoulder: pt(325, 244),
+          leftElbow: pt(260, 210), leftWrist: pt(230, 185), rightElbow: pt(350, 210), rightWrist: pt(385, 185)
+        },
+        targetB: {
+          leftAnkle: pt(210, GROUND_Y), leftKnee: pt(215, 378), leftHipJoint: pt(220, 320),
+          hip: pt(235, 320), rightHipJoint: pt(250, 320), rightKnee: pt(245, 378), rightAnkle: pt(245, GROUND_Y),
+          chest: pt(245, 240), head: pt(250, 210), leftShoulder: pt(225, 244), rightShoulder: pt(265, 244),
+          leftElbow: pt(265, 280), leftWrist: pt(295, 315), rightElbow: pt(285, 280), rightWrist: pt(300, 325)
+        }
+      },
+      {
+        id: 8, isDuo: true,
+        targetA: {
+          leftAnkle: pt(150, GROUND_Y), rightAnkle: pt(170, GROUND_Y), leftKnee: pt(155, 385), rightKnee: pt(175, 385),
+          leftHipJoint: pt(165, 335), rightHipJoint: pt(185, 335), hip: pt(175, 335),
+          chest: pt(255, 335), head: pt(285, 320), leftShoulder: pt(245, 345), rightShoulder: pt(265, 345),
+          leftElbow: pt(250, 390), leftWrist: pt(250, GROUND_Y), rightElbow: pt(270, 390), rightWrist: pt(270, GROUND_Y)
+        },
+        targetB: {
+          hip: pt(215, 310), leftHipJoint: pt(200, 310), rightHipJoint: pt(230, 310),
+          leftKnee: pt(195, 360), leftAnkle: pt(195, 410), rightKnee: pt(235, 360), rightAnkle: pt(235, 410),
+          chest: pt(215, 230), head: pt(215, 200), leftShoulder: pt(190, 234), rightShoulder: pt(240, 234),
+          leftElbow: pt(235, 255), leftWrist: pt(270, 265), rightElbow: pt(245, 220), rightWrist: pt(270, 185)
+        }
+      },
+      {
+        id: 9, isDuo: true,
+        targetA: {
+          leftAnkle: pt(150, GROUND_Y), leftKnee: pt(160, 385), leftHipJoint: pt(180, 340),
+          hip: pt(195, 340), rightHipJoint: pt(210, 340), rightKnee: pt(215, 385), rightAnkle: pt(210, GROUND_Y),
+          chest: pt(215, 265), head: pt(225, 240), leftShoulder: pt(195, 270), rightShoulder: pt(235, 260),
+          leftElbow: pt(160, 290), leftWrist: pt(135, 320), rightElbow: pt(240, 225), rightWrist: pt(248, 220)
+        },
+        targetB: {
+          leftAnkle: pt(290, GROUND_Y), leftKnee: pt(285, 385), leftHipJoint: pt(290, 340),
+          hip: pt(305, 340), rightHipJoint: pt(320, 340), rightKnee: pt(340, 385), rightAnkle: pt(350, GROUND_Y),
+          chest: pt(285, 265), head: pt(275, 240), leftShoulder: pt(265, 260), rightShoulder: pt(305, 270),
+          leftElbow: pt(260, 225), leftWrist: pt(252, 220), rightElbow: pt(340, 290), rightWrist: pt(365, 320)
+        }
+      },
+      {
+        id: 10, isDuo: true,
+        targetA: {
+          leftAnkle: pt(200, GROUND_Y), rightAnkle: pt(300, GROUND_Y), leftKnee: pt(195, 380), rightKnee: pt(305, 380),
+          leftHipJoint: pt(225, 335), rightHipJoint: pt(275, 335), hip: pt(250, 335),
+          chest: pt(250, 260), head: pt(250, 230), leftShoulder: pt(220, 265), rightShoulder: pt(280, 265),
+          leftElbow: pt(205, 225), leftWrist: pt(215, 185), rightElbow: pt(295, 225), rightWrist: pt(285, 185)
+        },
+        targetB: {
+          leftWrist: pt(215, 185), rightWrist: pt(285, 185), leftElbow: pt(225, 150), rightElbow: pt(275, 150),
+          leftShoulder: pt(235, 120), rightShoulder: pt(265, 120), head: pt(250, 145), chest: pt(250, 100),
+          hip: pt(250, 45), leftHipJoint: pt(235, 45), rightHipJoint: pt(265, 45),
+          leftKnee: pt(205, 25), leftAnkle: pt(175, 10), rightKnee: pt(295, 25), rightAnkle: pt(325, 10)
+        }
+      }
+    ];
+
+    let currentLvlIdx = 0;
+    let playerA = createGroundedPose(250);
+    let playerB = null;
+    let targetA = JSON.parse(JSON.stringify(LEVELS[0].targetA));
+    let targetB = null;
+    let isDuo = false;
+
+    let showGhost = true;
+    let showGuide = false;
+    const TOTAL_LEVEL_TIME = 45;
+    let countdown = TOTAL_LEVEL_TIME;
+    let timerId = null;
+
+    const activeDrags = new Map();
+
+    // --- Strict Vector & Bone Angle Evaluation (No Torso Free Points, Each Limb 25%) ---
+    function checkLimbAngles(p, t) {
+      const lUpper = angleDiffDeg(vecAngle(p.leftShoulder, p.leftElbow), vecAngle(t.leftShoulder, t.leftElbow));
+      const lLower = angleDiffDeg(vecAngle(p.leftElbow, p.leftWrist), vecAngle(t.leftElbow, t.leftWrist));
+      const rUpper = angleDiffDeg(vecAngle(p.rightShoulder, p.rightElbow), vecAngle(t.rightShoulder, t.rightElbow));
+      const rLower = angleDiffDeg(vecAngle(p.rightElbow, p.rightWrist), vecAngle(t.rightElbow, t.rightWrist));
+
+      const lThigh = angleDiffDeg(vecAngle(p.leftHipJoint, p.leftKnee), vecAngle(t.leftHipJoint, t.leftKnee));
+      const lCalf = angleDiffDeg(vecAngle(p.leftKnee, p.leftAnkle), vecAngle(t.leftKnee, t.leftAnkle));
+      const rThigh = angleDiffDeg(vecAngle(p.rightHipJoint, p.rightKnee), vecAngle(t.rightHipJoint, t.rightKnee));
+      const rCalf = angleDiffDeg(vecAngle(p.rightKnee, p.rightAnkle), vecAngle(t.rightKnee, t.rightAnkle));
+
+      return {
+        leftArm: (lUpper <= 18 && lLower <= 18),
+        rightArm: (rUpper <= 18 && rLower <= 18),
+        leftLeg: (lThigh <= 18 && lCalf <= 18),
+        rightLeg: (rThigh <= 18 && rCalf <= 18),
+        angles: { lUpper, lLower, rUpper, rLower, lThigh, lCalf, rThigh, rCalf }
+      };
+    }
+
+    function boneScoreFromDeg(deg) {
+      if (deg <= 18) return Math.round(100 - deg * 1.35); // 18 deg -> 75.7%, 0 deg -> 100%
+      if (deg >= 48) return 0;
+      return Math.round(Math.max(0, 75.7 - (deg - 18) * (75.7 / 30)));
+    }
+
+    function scoreAgent(p, t) {
+      const { angles } = checkLimbAngles(p, t);
+
+      // Score for each limb: both upper and lower segments
+      const sLArm = (boneScoreFromDeg(angles.lUpper) + boneScoreFromDeg(angles.lLower)) / 2;
+      const sRArm = (boneScoreFromDeg(angles.rUpper) + boneScoreFromDeg(angles.rLower)) / 2;
+      const sLLeg = (boneScoreFromDeg(angles.lThigh) + boneScoreFromDeg(angles.lCalf)) / 2;
+      const sRLeg = (boneScoreFromDeg(angles.rThigh) + boneScoreFromDeg(angles.rCalf)) / 2;
+
+      // 4 Limbs each count 25%. Torso has 0% free points!
+      const total = Math.round(sLArm * 0.25 + sRArm * 0.25 + sLLeg * 0.25 + sRLeg * 0.25);
+      return clamp(total, 0, 100);
+    }
+
+    function computeMatchScore() {
+      const sA = scoreAgent(playerA, targetA);
+      if (!isDuo || !playerB || !targetB) return sA;
+      const sB = scoreAgent(playerB, targetB);
+      const minS = Math.min(sA, sB);
+      return Math.round(minS * 0.4 + ((sA + sB) / 2) * 0.6);
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function getCanvasCoord(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width),
+        y: (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height)
+      };
+    }
+
+    function findHit(pos) {
+      const test = (pose, agent) => {
+        const tests = [
+          { name: 'leftWrist', pt: pose.leftWrist, r: 32 },
+          { name: 'rightWrist', pt: pose.rightWrist, r: 32 },
+          { name: 'leftAnkle', pt: pose.leftAnkle, r: 32 },
+          { name: 'rightAnkle', pt: pose.rightAnkle, r: 32 },
+          { name: 'leftElbow', pt: pose.leftElbow, r: 24 },
+          { name: 'rightElbow', pt: pose.rightElbow, r: 24 },
+          { name: 'leftKnee', pt: pose.leftKnee, r: 24 },
+          { name: 'rightKnee', pt: pose.rightKnee, r: 24 },
+          { name: 'head', pt: pose.head, r: 28 },
+          { name: 'hip', pt: pose.hip, r: 26 },
+        ];
+        for (const t of tests) {
+          if (dist(pos, t.pt) <= t.r) return { agent, joint: t.name };
+        }
+        return null;
+      };
+
+      if (isDuo && playerB) {
+        const hitB = test(playerB, 'B');
+        if (hitB) return hitB;
+      }
+      return test(playerA, 'A');
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      const pos = getCanvasCoord(e);
+      const hit = findHit(pos);
+      if (hit) {
+        const targetPose = hit.agent === 'A' ? playerA : playerB;
+        activeDrags.set(e.pointerId, {
+          agent: hit.agent,
+          joint: hit.joint,
+          startX: pos.x,
+          startY: pos.y,
+          lastX: pos.x,
+          lastY: pos.y,
+          initPose: JSON.parse(JSON.stringify(targetPose))
+        });
+        sound.playPop();
+      }
+    });
+
+    // Pure freeform dragging: NO solve2BoneIK, no snapping, no flipping
+    canvas.addEventListener('pointermove', (e) => {
+      const drag = activeDrags.get(e.pointerId);
+      if (!drag) return;
+      e.preventDefault();
+      const pos = getCanvasCoord(e);
+      const pose = drag.agent === 'A' ? playerA : playerB;
+      const init = drag.initPose;
+      const joint = drag.joint;
+      const dxTotal = pos.x - drag.startX;
+      const dyTotal = pos.y - drag.startY;
+      const dxStep = pos.x - drag.lastX;
+      const dyStep = pos.y - drag.lastY;
+
+      if (joint === 'hip') {
+        Object.keys(pose).forEach(k => { pose[k] = pt(init[k].x + dxTotal, init[k].y + dyTotal); });
+      } else if (joint === 'head') {
+        pose.head = pt(pos.x, pos.y);
+        const angle = Math.atan2(pos.y - pose.hip.y, pos.x - pose.hip.x);
+        pose.chest = pt(pose.hip.x + Math.cos(angle) * BONE.torso, pose.hip.y + Math.sin(angle) * BONE.torso);
+      } else if (joint === 'leftWrist') {
+        pose.leftWrist = pt(pos.x, pos.y);
+        pose.leftElbow = pt(pose.leftElbow.x + dxStep * 0.45, pose.leftElbow.y + dyStep * 0.45);
+      } else if (joint === 'rightWrist') {
+        pose.rightWrist = pt(pos.x, pos.y);
+        pose.rightElbow = pt(pose.rightElbow.x + dxStep * 0.45, pose.rightElbow.y + dyStep * 0.45);
+      } else if (joint === 'leftAnkle') {
+        pose.leftAnkle = pt(pos.x, Math.min(GROUND_Y, pos.y));
+        pose.leftKnee = pt(pose.leftKnee.x + dxStep * 0.45, pose.leftKnee.y + dyStep * 0.45);
+      } else if (joint === 'rightAnkle') {
+        pose.rightAnkle = pt(pos.x, Math.min(GROUND_Y, pos.y));
+        pose.rightKnee = pt(pose.rightKnee.x + dxStep * 0.45, pose.rightKnee.y + dyStep * 0.45);
+      } else if (joint === 'leftElbow') {
+        pose.leftElbow = pt(pos.x, pos.y);
+      } else if (joint === 'rightElbow') {
+        pose.rightElbow = pt(pos.x, pos.y);
+      } else if (joint === 'leftKnee') {
+        pose.leftKnee = pt(pos.x, pos.y);
+      } else if (joint === 'rightKnee') {
+        pose.rightKnee = pt(pos.x, pos.y);
+      }
+
+      drag.lastX = pos.x;
+      drag.lastY = pos.y;
+      updateUI();
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if (activeDrags.has(e.pointerId)) {
+        sound.playRelease();
+        activeDrags.delete(e.pointerId);
+      }
+    });
+
+    function updateUI() {
+      const score = computeMatchScore();
+      const scoreNum = document.getElementById('scoreNum');
+      const progressFill = document.getElementById('progressFill');
+      const commentTag = document.getElementById('commentTag');
+      const btnSubmit = document.getElementById('btnSubmit');
+      const langData = I18N[currentLang];
+
+      scoreNum.innerText = score + '%';
+      progressFill.style.width = score + '%';
+
+      if (score >= 65) {
+        scoreNum.style.color = '#10b981';
+        progressFill.style.background = '#10b981';
+        commentTag.style.borderColor = '#10b981';
+        commentTag.style.color = '#6ee7b7';
+        commentTag.style.background = 'rgba(16, 185, 129, 0.15)';
+        commentTag.innerText = langData.critiqueReady;
+        btnSubmit.classList.add('ready');
+      } else if (score >= 40) {
+        scoreNum.style.color = '#f59e0b';
+        progressFill.style.background = '#f59e0b';
+        commentTag.style.borderColor = '#f59e0b';
+        commentTag.style.color = '#fcd34d';
+        commentTag.style.background = 'rgba(245, 158, 11, 0.15)';
+        commentTag.innerText = langData.critiqueClose;
+        btnSubmit.classList.remove('ready');
+      } else {
+        scoreNum.style.color = '#f43f5e';
+        progressFill.style.background = '#f43f5e';
+        commentTag.style.borderColor = '#f43f5e';
+        commentTag.style.color = '#fda4af';
+        commentTag.style.background = 'rgba(244, 63, 94, 0.15)';
+        commentTag.innerText = langData.critiqueFar;
+        btnSubmit.classList.remove('ready');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      ctx.fillStyle = '#060a12';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.35)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= CANVAS_WIDTH; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_HEIGHT); ctx.stroke();
+      }
+      for (let y = 0; y <= CANVAS_HEIGHT; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_WIDTH, y); ctx.stroke();
+      }
+
+      // Ground plane
+      const grad = ctx.createLinearGradient(0, GROUND_Y, 0, CANVAS_HEIGHT);
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0.12)');
+      grad.addColorStop(1, 'rgba(15, 23, 42, 0.6)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y); ctx.lineTo(CANVAS_WIDTH, GROUND_Y);
+      ctx.stroke();
+
+      for (let x = 15; x < CANVAS_WIDTH; x += 25) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, GROUND_Y); ctx.lineTo(x - 10, GROUND_Y + 10); ctx.stroke();
+      }
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.fillText('GROUND LEVEL // 0.00 M', 14, GROUND_Y + 20);
+
+      // Render Shadow Target Bones
+      const drawTargetBones = (pose, color, lineWidth, dash = false) => {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (dash) ctx.setLineDash([7, 5]);
+
+        const drawSegment = (p1, p2) => {
+          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        };
+
+        drawSegment(pose.hip, pose.chest);
+        drawSegment(pose.chest, pose.leftShoulder); drawSegment(pose.chest, pose.rightShoulder);
+        drawSegment(pose.hip, pose.leftHipJoint); drawSegment(pose.hip, pose.rightHipJoint);
+        drawSegment(pose.leftShoulder, pose.leftElbow); drawSegment(pose.leftElbow, pose.leftWrist);
+        drawSegment(pose.rightShoulder, pose.rightElbow); drawSegment(pose.rightElbow, pose.rightWrist);
+        drawSegment(pose.leftHipJoint, pose.leftKnee); drawSegment(pose.leftKnee, pose.leftAnkle);
+        drawSegment(pose.rightHipJoint, pose.rightKnee); drawSegment(pose.rightKnee, pose.rightAnkle);
+
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(pose.head.x, pose.head.y, BONE.headR, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      };
+
+      if (showGhost) {
+        drawTargetBones(targetA, isDuo ? 'rgba(56, 189, 248, 0.35)' : 'rgba(148, 163, 184, 0.35)', 7, true);
+        if (isDuo && targetB) {
+          drawTargetBones(targetB, 'rgba(251, 146, 60, 0.35)', 7, true);
+        }
+      }
+
+      if (showGuide) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(234, 179, 8, 0.3)';
+        ctx.setLineDash([3, 3]);
+        const drawPairs = (p, t) => {
+          [
+            [p.leftWrist, t.leftWrist], [p.rightWrist, t.rightWrist],
+            [p.leftAnkle, t.leftAnkle], [p.rightAnkle, t.rightAnkle]
+          ].forEach(([p1, p2]) => {
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+          });
+        };
+        drawPairs(playerA, targetA);
+        if (isDuo && playerB && targetB) drawPairs(playerB, targetB);
+        ctx.restore();
+      }
+
+      // Draw Player Bones with Emerald Green (#10B981) feedback when dual bones align <= 18°
+      const drawPlayerBonesWithGlow = (pose, target, defaultColor) => {
+        const matches = checkLimbAngles(pose, target);
+        const GLOW_COLOR = '#10B981';
+
+        const drawSegment = (p1, p2, col, isGlow) => {
+          ctx.save();
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 6;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          if (isGlow) {
+            ctx.shadowColor = '#10B981';
+            ctx.shadowBlur = 10;
+          }
+          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+          ctx.restore();
+        };
+
+        // Torso / Head in default agent color
+        drawSegment(pose.hip, pose.chest, defaultColor, false);
+        drawSegment(pose.chest, pose.leftShoulder, defaultColor, false);
+        drawSegment(pose.chest, pose.rightShoulder, defaultColor, false);
+        drawSegment(pose.hip, pose.leftHipJoint, defaultColor, false);
+        drawSegment(pose.hip, pose.rightHipJoint, defaultColor, false);
+
+        // Head
+        ctx.save();
+        ctx.strokeStyle = defaultColor;
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(pose.head.x, pose.head.y, BONE.headR, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+
+        // Limbs: Glow #10B981 strictly if dual bones <= 18 deg!
+        const lArmCol = matches.leftArm ? GLOW_COLOR : defaultColor;
+        drawSegment(pose.leftShoulder, pose.leftElbow, lArmCol, matches.leftArm);
+        drawSegment(pose.leftElbow, pose.leftWrist, lArmCol, matches.leftArm);
+
+        const rArmCol = matches.rightArm ? GLOW_COLOR : defaultColor;
+        drawSegment(pose.rightShoulder, pose.rightElbow, rArmCol, matches.rightArm);
+        drawSegment(pose.rightElbow, pose.rightWrist, rArmCol, matches.rightArm);
+
+        const lLegCol = matches.leftLeg ? GLOW_COLOR : defaultColor;
+        drawSegment(pose.leftHipJoint, pose.leftKnee, lLegCol, matches.leftLeg);
+        drawSegment(pose.leftKnee, pose.leftAnkle, lLegCol, matches.leftLeg);
+
+        const rLegCol = matches.rightLeg ? GLOW_COLOR : defaultColor;
+        drawSegment(pose.rightHipJoint, pose.rightKnee, rLegCol, matches.rightLeg);
+        drawSegment(pose.rightKnee, pose.rightAnkle, rLegCol, matches.rightLeg);
+      };
+
+      drawPlayerBonesWithGlow(playerA, targetA, isDuo ? '#38bdf8' : '#ffffff');
+      if (isDuo && playerB && targetB) {
+        drawPlayerBonesWithGlow(playerB, targetB, '#fb923c');
+      }
+
+      // Joint Touch Handles
+      const drawHandles = (pose, colMain, colSub) => {
+        const drawH = (pt, col, r) => {
+          ctx.save();
+          ctx.fillStyle = col; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.arc(pt.x, pt.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        };
+        drawH(pose.leftWrist, colMain, 9);
+        drawH(pose.rightWrist, colMain, 9);
+        drawH(pose.leftAnkle, colMain, 9);
+        drawH(pose.rightAnkle, colMain, 9);
+        drawH(pose.leftElbow, colSub, 6);
+        drawH(pose.rightElbow, colSub, 6);
+        drawH(pose.leftKnee, colSub, 6);
+        drawH(pose.rightKnee, colSub, 6);
+        drawH(pose.head, '#fbbf24', 6);
+        drawH(pose.hip, '#a855f7', 6);
+      };
+
+      drawHandles(playerA, isDuo ? '#06b6d4' : '#ef4444', isDuo ? '#38bdf8' : '#f97316');
+      if (isDuo && playerB) {
+        drawHandles(playerB, '#ea580c', '#fb923c');
+      }
+
+      requestAnimationFrame(render);
+    }
+    render();
+
+    function updateLanguageUI() {
+      const data = I18N[currentLang];
+      document.getElementById('brandTitle').innerText = data.brandTitle;
+      document.getElementById('btnSound').innerText = sound.muted ? data.btnSoundOff : data.btnSoundOn;
+      document.getElementById('btnReset').innerText = data.btnReset;
+      document.getElementById('btnLevel').innerText = data.btnLevel;
+      document.getElementById('btnToggleShadow').innerText = showGhost ? data.btnShadowShow : data.btnShadowHide;
+      document.getElementById('btnGuide').innerText = showGuide ? data.btnGuideOn : data.btnGuideOff;
+      document.getElementById('btnSubmit').innerText = data.btnSubmit;
+      document.getElementById('scoreLabel').innerText = data.scoreLabel;
+      document.getElementById('modalTopSecret').innerText = data.evalTitle;
+      document.getElementById('modalTimeLabel').innerText = data.timeLabel;
+      document.getElementById('btnModalRetry').innerText = data.btnRetry;
+      document.getElementById('btnModalNext').innerText = data.btnNext;
+
+      const missionInfo = data.missions[currentLvlIdx];
+      if (missionInfo) {
+        document.getElementById('missionCode').innerText = missionInfo.code;
+        document.getElementById('missionName').innerText = missionInfo.title;
+        document.getElementById('missionDesc').innerText = missionInfo.sub;
+      }
+      updateUI();
+    }
+
+    function loadMission(idx) {
+      currentLvlIdx = idx;
+      const lvl = LEVELS[idx];
+      isDuo = lvl.isDuo;
+
+      targetA = JSON.parse(JSON.stringify(lvl.targetA));
+      targetB = lvl.targetB ? JSON.parse(JSON.stringify(lvl.targetB)) : null;
+
+      if (isDuo) {
+        playerA = createGroundedPose(190);
+        playerB = createGroundedPose(310);
+      } else {
+        playerA = createGroundedPose(250);
+        playerB = null;
+      }
+
+      clearInterval(timerId);
+      countdown = TOTAL_LEVEL_TIME;
+      const timerBadge = document.getElementById('timerBadge');
+      timerBadge.style.display = 'inline-flex';
+      timerBadge.classList.remove('timer-urgent');
+      timerBadge.innerText = `⏱ ${countdown}s`;
+
+      timerId = setInterval(() => {
+        countdown--;
+        timerBadge.innerText = `⏱ ${countdown}s`;
+        if (countdown <= 5) {
+          timerBadge.classList.add('timer-urgent');
+          sound.playTick();
+        }
+        if (countdown <= 0) {
+          clearInterval(timerId);
+          // Directly trigger submitPose() on timeout without fake fail!
+          submitPose();
+        }
+      }, 1000);
+
+      updateLanguageUI();
+    }
+
+    loadMission(0);
+
+    function submitPose() {
+      clearInterval(timerId);
+      const score = computeMatchScore();
+      const modal = document.getElementById('resultModal');
+      const isPass = score >= 65; // Consistent 65% passing threshold
+      const data = I18N[currentLang];
+
+      // Dynamic actual time spent calculation: TOTAL_LEVEL_TIME - remaining countdown
+      const timeSpent = Math.max(0.1, TOTAL_LEVEL_TIME - Math.max(0, countdown)).toFixed(1);
+      document.getElementById('modalTimeSpent').innerText = timeSpent + 's';
+
+      document.getElementById('modalScore').innerText = score + '%';
+      document.getElementById('modalScore').style.color = isPass ? '#10b981' : '#f43f5e';
+      document.getElementById('modalVerdict').innerText = isPass ? data.verdictPass : (isDuo ? data.verdictFailDuo : data.verdictFailSolo);
+      document.getElementById('modalStars').innerText = score >= 90 ? '★★★' : isPass ? '★★☆' : '☆☆☆';
+      document.getElementById('modalQuote').innerText = data.missions[currentLvlIdx].quote;
+      modal.style.display = 'flex';
+
+      if (isPass) sound.playSuccess(); else sound.playFail();
+    }
+
+    document.getElementById('btnSubmit').onclick = submitPose;
+
+    document.getElementById('btnReset').onclick = () => {
+      if (isDuo) {
+        playerA = createGroundedPose(190);
+        playerB = createGroundedPose(310);
+      } else {
+        playerA = createGroundedPose(250);
+      }
+      updateUI();
+    };
+
+    document.getElementById('btnSound').onclick = () => {
+      sound.muted = !sound.muted;
+      const data = I18N[currentLang];
+      document.getElementById('btnSound').innerText = sound.muted ? data.btnSoundOff : data.btnSoundOn;
+    };
+
+    document.getElementById('btnToggleShadow').onclick = () => {
+      showGhost = !showGhost;
+      const data = I18N[currentLang];
+      document.getElementById('btnToggleShadow').innerText = showGhost ? data.btnShadowShow : data.btnShadowHide;
+    };
+
+    document.getElementById('btnGuide').onclick = () => {
+      showGuide = !showGuide;
+      const data = I18N[currentLang];
+      document.getElementById('btnGuide').innerText = showGuide ? data.btnGuideOn : data.btnGuideOff;
+    };
+
+    document.getElementById('btnLevel').onclick = () => {
+      currentLvlIdx = (currentLvlIdx + 1) % LEVELS.length;
+      loadMission(currentLvlIdx);
+    };
+
+    // Toggle Language between zh and en
+    document.getElementById('btnLang').onclick = () => {
+      currentLang = currentLang === 'zh' ? 'en' : 'zh';
+      updateLanguageUI();
+    };
+
+    document.getElementById('btnModalRetry').onclick = () => {
+      document.getElementById('resultModal').style.display = 'none';
+      loadMission(currentLvlIdx);
+    };
+
+    document.getElementById('btnModalNext').onclick = () => {
+      document.getElementById('resultModal').style.display = 'none';
+      currentLvlIdx = (currentLvlIdx + 1) % LEVELS.length;
+      loadMission(currentLvlIdx);
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "Pose Match: Shadow Agent",
+  "description": "A responsive stickman pose-matching game with freeform node dragging, instant limb alignment glow, and bilingual spy missions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
