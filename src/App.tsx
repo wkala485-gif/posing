@@ -61,6 +61,10 @@ export default function App() {
   const [result, setResult] = useState<LevelResult | null>(null);
   const [showLevelSelect, setShowLevelSelect] = useState<boolean>(false);
 
+  // ===== Step-1 Flat Slit Test Mode (temporary verification) =====
+  const [flatTestMode, setFlatTestMode] = useState(false);
+  const [flatStatus, setFlatStatus] = useState<{ pass: boolean; bodyHeight: number; heightRatio: number } | null>(null);
+
   // Reference for last tick sound
   const lastTickSecondRef = useRef<number>(-1);
 
@@ -292,18 +296,38 @@ export default function App() {
           userPoses={userPoses}
           targetPoses={levelData.targets}
           limbMatches={limbMatches}
-          showShadow={showShadow}
+          showShadow={showShadow && !flatTestMode}
           isMemoryBlindPhase={isMemoryBlindPhase}
           isDuo={levelData.isDuo}
           language={language}
           onPoseChange={(poses) => setUserPoses(poses)}
-          interactive={gamePhase === 'PLAYING'}
+          interactive={gamePhase === 'PLAYING' || flatTestMode}
+          flatTestMode={flatTestMode}
+          onFlatStatusChange={setFlatStatus}
         />
 
         {/* Peek active flash indicator */}
         {isPeeking && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 font-mono text-xs font-bold animate-pulse pointer-events-none z-30">
             👁️ PEEKING (1s)
+          </div>
+        )}
+
+        {/* ===== Step-1 Flat Test HUD ===== */}
+        {flatTestMode && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-1.5 pointer-events-none">
+            <div className={`px-4 py-1.5 rounded-full font-mono text-sm font-bold border ${
+              flatStatus?.pass
+                ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300'
+                : 'bg-rose-500/20 border-rose-400 text-rose-300'
+            }`}>
+              {flatStatus?.pass ? '✓ FLAT ENOUGH – CAN PASS' : '✗ TOO TALL – FLATTEN MORE'}
+            </div>
+            {flatStatus && (
+              <div className="text-[11px] font-mono text-slate-400">
+                height {flatStatus.bodyHeight.toFixed(0)}px / ratio {(flatStatus.heightRatio * 100).toFixed(0)}%
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -319,6 +343,20 @@ export default function App() {
           >
             <span className="text-sm">↺</span>
             <span className="hidden xs:inline">{language === 'zh' ? '重置' : 'Reset'}</span>
+          </button>
+
+          {/* Temporary Step-1 Flat Test toggle */}
+          <button
+            onClick={() => setFlatTestMode((v) => !v)}
+            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all active:scale-95 shadow-md whitespace-nowrap ${
+              flatTestMode
+                ? 'bg-emerald-600/30 border-emerald-400 text-emerald-200'
+                : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700 hover:border-cyan-500/50 text-slate-200'
+            }`}
+            title="Step-1: Static Flat Slit Test"
+          >
+            <span className="text-sm">═</span>
+            <span className="hidden xs:inline">{flatTestMode ? 'Flat ON' : 'Flat Test'}</span>
           </button>
 
           <button
