@@ -7,6 +7,10 @@ import {
   getShoulderPos,
   getPelvisPos,
   updateStickmanDrag,
+  applySoftRebound,
+  isBodyFlatEnough,
+  DEFAULT_FLAT_SLIT,
+  FlatSlit,
 } from '../utils/kinematics';
 import { sounds } from '../utils/audio';
 
@@ -20,6 +24,10 @@ interface Props {
   language?: Language;
   onPoseChange: (newPoses: StickmanPose[]) => void;
   interactive: boolean;
+  /** Step-1 test mode: show a static horizontal slit and live flat-check feedback */
+  flatTestMode?: boolean;
+  flatSlit?: FlatSlit;
+  onFlatStatusChange?: (status: { pass: boolean; bodyHeight: number; heightRatio: number }) => void;
 }
 
 export const StickmanCanvas: React.FC<Props> = ({
@@ -32,6 +40,9 @@ export const StickmanCanvas: React.FC<Props> = ({
   language = 'zh',
   onPoseChange,
   interactive,
+  flatTestMode = false,
+  flatSlit = DEFAULT_FLAT_SLIT,
+  onFlatStatusChange,
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -101,9 +112,30 @@ export const StickmanCanvas: React.FC<Props> = ({
       } catch {
         // ignore
       }
+
+      // Soft rubber-band rebound on release (pleasant feel, prevents permanent spaghetti limbs)
+      const agentIdx = userPoses.findIndex((p) => p.id === activeDrag.agentId);
+      if (agentIdx !== -1) {
+        const rebounded = applySoftRebound(userPoses[agentIdx], 0.28);
+        const next = [...userPoses];
+        next[agentIdx] = rebounded;
+        onPoseChange(next);
+      }
+
       setActiveDrag(null);
     }
   };
+
+  // Live flat-check for Step-1 test mode
+  useEffect(() => {
+    if (!flatTestMode || !onFlatStatusChange || userPoses.length === 0) return;
+    const status = isBodyFlatEnough(userPoses[0], flatSlit);
+    onFlatStatusChange({
+      pass: status.pass,
+      bodyHeight: status.bodyHeight,
+      heightRatio: status.heightRatio,
+    });
+  }, [userPoses, flatTestMode, flatSlit, onFlatStatusChange]);
 
   // Render individual target shadow stickman
   const renderShadow = (pose: StickmanPose, colorTheme: 'solo' | 'blue' | 'orange') => {
@@ -704,6 +736,53 @@ export const StickmanCanvas: React.FC<Props> = ({
                 : 'solo';
               return renderShadow(target, theme);
             })}
+          </g>
+        )}
+
+        {/* ===== Step-1 Static Flat Slit (only when flatTestMode) ===== */}
+        {flatTestMode && (
+          <g>
+            {/* Dark ceiling block */}
+            <rect
+              x={flatSlit.x ?? 40}
+              y={0}
+              width={flatSlit.width ?? 420}
+              height={flatSlit.centerY - flatSlit.height / 2}
+              fill="rgba(15, 23, 42, 0.82)"
+              stroke="rgba(148, 163, 184, 0.35)"
+              strokeWidth="2"
+            />
+            {/* Dark floor block */}
+            <rect
+              x={flatSlit.x ?? 40}
+              y={flatSlit.centerY + flatSlit.height / 2}
+              width={flatSlit.width ?? 420}
+              height={GROUND_Y - (flatSlit.centerY + flatSlit.height / 2) + 30}
+              fill="rgba(15, 23, 42, 0.82)"
+              stroke="rgba(148, 163, 184, 0.35)"
+              strokeWidth="2"
+            />
+            {/* The actual gap (glowing outline) */}
+            <rect
+              x={flatSlit.x ?? 40}
+              y={flatSlit.centerY - flatSlit.height / 2}
+              width={flatSlit.width ?? 420}
+              height={flatSlit.height}
+              fill="rgba(16, 185, 129, 0.08)"
+              stroke="#10B981"
+              strokeWidth="3"
+              strokeDasharray="8,5"
+            />
+            {/* Center guide line */}
+            <line
+              x1={flatSlit.x ?? 40}
+              y1={flatSlit.centerY}
+              x2={(flatSlit.x ?? 40) + (flatSlit.width ?? 420)}
+              y2={flatSlit.centerY}
+              stroke="rgba(16, 185, 129, 0.45)"
+              strokeWidth="1.5"
+              strokeDasharray="4,4"
+            />
           </g>
         )}
 
